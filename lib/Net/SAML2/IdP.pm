@@ -1,6 +1,6 @@
 package Net::SAML2::IdP;
 use Moose;
-use MooseX::Types::Moose qw/ Str Object HashRef ArrayRef /;
+use MooseX::Types::Moose qw/ Str Object HashRef ArrayRef Int /;
 use MooseX::Types::URI qw/ Uri /;
 
 =head1 NAME
@@ -38,10 +38,13 @@ has 'art_urls'       => (isa => 'HashRef[Str]|Undef', is => 'ro', required => 1)
 has 'certs'          => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'formats'        => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'default_format' => (isa => Str, is => 'ro', required => 1);
+has 'verify_cacert'  => (isa => Int, is => 'ro', required => 1); 
 
-=head2 new_from_url( url => $url, cacert => $cacert )
+=head2 new_from_url( url => $url, cacert => $cacert, verify_cacert => $bool )
 
 Create an IdP object by retrieving the metadata at the given URL.
+
+If verify_cacert is set false, CA verification will not be completed.
 
 Dies if the metadata can't be retrieved.
 
@@ -57,10 +60,14 @@ sub new_from_url {
     die "no metadata" unless $res->is_success;
     my $xml = $res->content;
 
-    return $class->new_from_xml( xml => $xml, cacert => $args{cacert} );
+    return $class->new_from_xml( 
+        xml => $xml, 
+        cacert => $args{cacert}, 
+        ( exists $args{verify_cacert} ? ( verify_cacert => $args{verify_cacert} ) : () ),
+    );
 }
 
-=head2 new_from_xml( xml => $xml, cacert => $cacert )
+=head2 new_from_xml( xml => $xml, cacert => $cacert  )
 
 Constructor. Create an IdP object using the provided metadata XML
 document.
@@ -129,6 +136,7 @@ sub new_from_xml {
         formats        => $data->{NameIDFormat},
         default_format => $data->{DefaultFormat},
         cacert         => $args{cacert},
+        verify_cacert  => ( exists $args{verify_cacert} and $args{verify_cacert} == 0 ) ? 0 : 1,
     );
 
     return $self;
@@ -140,9 +148,10 @@ sub BUILD {
         
     for my $use (keys %{ $self->certs }) {
         my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
-        unless ($ca->verify($cert)) {
-            die "can't verify IdP '$use' cert";
+        if ( $self->verify_cacert ) {
+            die "Cannot verift IdP '$use' cert" unless $ca->verify($cert);
         }
+
     }       
 }
 
