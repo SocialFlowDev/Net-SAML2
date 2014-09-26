@@ -37,6 +37,12 @@ Arguments:
  * org_display_name - the SP organisation display name
  * org_contact      - an SP contact email address
 
+ * soap          - bindings:SOAP location          ( $url/saml/slo-soap )
+ * http_redirect - bindings:HTTP-Redirect location ( $url/saml/sls-redirect-response )
+ * http_post     - bindings:HTTP-POST location     ( $url/saml/consumer-post
+ * http_artifact - bindings:HTTP-Artifact location ( $url/saml/consumer-artifact )
+
+
 =cut
 
 has 'url'    => (isa => Uri, is => 'ro', required => 1, coerce => 1);
@@ -47,6 +53,34 @@ has 'cacert' => (isa => Str, is => 'ro', required => 1);
 has 'org_name'         => (isa => Str, is => 'ro', required => 1);
 has 'org_display_name' => (isa => Str, is => 'ro', required => 1);
 has 'org_contact'      => (isa => Str, is => 'ro', required => 1);
+
+has 'soap' => (
+    isa     => Str, 
+    is      => 'ro',
+    lazy    => 1,
+    default => sub { sprintf( "%s/saml/slo-soap", shift->url ) }
+);
+
+has 'http_redirect' => (
+    isa => Str,
+    is => 'ro',
+    lazy    => 1,
+    default => sub { sprintf( "%s/saml/sls-redirect-response", shift->url ) }
+);
+
+has 'http_post' => (
+    isa => Str, 
+    is => 'ro',
+    lazy    => 1,
+    default => sub { sprintf( "%s/saml/consumer-post", shift->url ) }
+);
+
+has 'http_artifact' => (
+    isa => Str,
+    is => 'ro', 
+    lazy    => 1,
+    default => sub { sprintf( "%s/saml/consumer-artifact", shift->url ) }
+);
 
 has '_cert_text' => (isa => Str, is => 'rw', required => 0);
 
@@ -272,24 +306,26 @@ sub metadata {
             $x->SingleLogoutService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:SOAP',
-                  Location  => $self->url . '/saml/slo-soap' },
+                  Location => $self->soap,
+              },
             ),
             $x->SingleLogoutService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect',
-                  Location  => $self->url . '/saml/sls-redirect-response' },
+                  Location => $self->http_redirect,
+                },
             ),
             $x->AssertionConsumerService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST',
-                  Location => $self->url . '/saml/consumer-post',
+                  Location => $self->http_post,
                   index => '1',
                   isDefault => 'true' },
             ),
             $x->AssertionConsumerService(
                 $md,
                 { Binding => 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact',
-                  Location => $self->url . '/saml/consumer-artifact',
+                  Location => $self->http_artifact,
                   index => '2',
                   isDefault => 'false' },
             ),
