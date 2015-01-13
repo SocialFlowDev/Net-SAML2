@@ -82,20 +82,25 @@ sub name {
     return $self->attributes->{CN}->[0];
 }
 
-=head2 valid( $audience )
+=head2 valid( $audience, %opt )
 
 Returns true if this Assertion is currently valid for the given audience.
 
 Checks the audience matches, and that the current time is within the
 Assertions validity period as specified in its Conditions element.
 
+C<%opt> can contain C<no_audience> as a true value to exclude audience
+checks.
+
 =cut
 
 sub valid {
-    my ($self, $audience) = @_;
+    my ($self, $audience, %opt) = @_;
 
-    return 0 unless defined $audience;
-    return 0 unless ($audience eq $self->audience);
+    unless ($opt{no_audience}) {
+        return 0 unless defined $audience;
+        return 0 unless ($audience eq $self->audience);
+    }
 
     my $now = DateTime::->now;
         
