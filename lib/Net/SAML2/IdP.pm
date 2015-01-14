@@ -109,8 +109,8 @@ sub new_from_xml {
 
     for my $key ($xpath->findnodes('//md:EntityDescriptor/md:IDPSSODescriptor/md:KeyDescriptor')) {
         my $use = $key->getAttribute('use');
-        my ($text) = $key->findvalue('ds:KeyInfo/ds:X509Data/ds:X509Certificate');
-        $text =~ /^\s*(.+?)\s*$/s;
+        my ($text) = $key->findvalue('KeyInfo/X509Data/X509Certificate');
+        $text =~ s/^\s*(.+?)\s*$/$1/s;
 
         # rewrap the base64 data from the metadata; it may not
         # be wrapped at 64 characters as PEM requires
