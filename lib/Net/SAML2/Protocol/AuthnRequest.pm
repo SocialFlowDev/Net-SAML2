@@ -37,6 +37,11 @@ has 'issuer'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'destination'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 
+has 'provider_name'     => (isa => Str, is => 'ro');
+has 'protocol_binding'  => (isa => Str, is => 'ro');
+has 'ac_service_url'    => (isa => Uri, is => 'ro', coerce => 1);
+has 'authn_context'     => (isa => Str, is => 'ro');
+
 =head2 as_xml()
 
 Returns the AuthnRequest as XML.
@@ -56,7 +61,13 @@ sub as_xml {
             { Destination => $self->destination,
               ID => $self->id,
               IssueInstant => $self->issue_instant,
-              ProviderName => "My SP's human readable name.",
+              ProviderName => $self->provider_name || 'Provider',
+              defined($self->protocol_binding) ? (
+                ProtocolBinding => $self->protocol_binding,
+              ) : (),
+              defined($self->ac_service_url) ? (
+                AssertionConsumerServiceURL => $self->ac_service_url,
+              ) : (),
               Version => '2.0' },
             $x->Issuer(
                 $saml,
@@ -64,9 +75,17 @@ sub as_xml {
             ),
             $x->NameIDPolicy(
                 $samlp,
-                { AllowCreate => '1',
+                { AllowCreate => 'true',
                   Format => $self->nameid_format },
-            )
+            ),
+            defined($self->authn_context) ? $x->RequestedAuthnContext(
+                $samlp,
+                { Comparison => 'exact' },
+                $x->AuthnContextClassRef(
+                    $saml,
+                    $self->authn_context,
+                ),
+            ) : (),
         )
     );
 }

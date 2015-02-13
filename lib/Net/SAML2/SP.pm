@@ -54,6 +54,8 @@ has 'org_name'         => (isa => Str, is => 'ro', required => 1);
 has 'org_display_name' => (isa => Str, is => 'ro', required => 1);
 has 'org_contact'      => (isa => Str, is => 'ro', required => 1);
 
+has id_prefix => (isa => Str, is => 'ro');
+
 has 'soap' => (
     isa     => Str, 
     is      => 'ro',
@@ -103,13 +105,15 @@ given destination, which should be the identity URI of the IdP.
 =cut
 
 sub authn_request {
-    my ($self, $destination, $nameid_format) = @_;
+    my ($self, $destination, $nameid_format, %opt) = @_;
         
     my $authnreq = Net::SAML2::Protocol::AuthnRequest->new(
+        %opt,
         issueinstant  => DateTime->now,
         issuer        => $self->id,
         destination   => $destination,
         nameid_format => $nameid_format,
+        id_prefix     => $self->id_prefix,
     );
         
     return $authnreq;

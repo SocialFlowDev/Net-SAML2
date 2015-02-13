@@ -27,7 +27,9 @@ around 'BUILDARGS' => sub {
     my %args = @_;
 
     # random ID for this message
-    $args{id} ||= unpack 'H*', Crypt::OpenSSL::Random::random_pseudo_bytes(16);
+    $args{id} ||= join '',
+        defined($args{id_prefix}) ? $args{id_prefix} : (),
+        unpack 'H*', Crypt::OpenSSL::Random::random_pseudo_bytes(16);
 
     # IssueInstant in UTC
     my $dt = DateTime->now( time_zone => 'UTC' );
