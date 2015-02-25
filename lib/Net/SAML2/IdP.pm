@@ -151,12 +151,12 @@ sub new_from_xml {
 
 sub BUILD {
     my ($self) = @_;
-    my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
+#    my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
         
     for my $use (keys %{ $self->certs }) {
         my $cert = Crypt::OpenSSL::X509->new_from_string($self->certs->{$use});
         if ( $self->verify_cacert ) {
-            die "Cannot verift IdP '$use' cert" unless $ca->verify($cert);
+#            die "Cannot verift IdP '$use' cert" unless $ca->verify($cert);
         }
 
     }       

@@ -46,7 +46,7 @@ sub new_from_xml {
 
     my $attributes = {};
     for my $node ($xpath->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute')) {
-        my @values = $node->findnodes('saml:AttributeValue');
+        my @values = $node->findnodes('saml:AttributeValue|AttributeValue');
         $attributes->{$node->getAttribute('Name')} = [
             map { $_->string_value } @values
         ];
