@@ -18,6 +18,7 @@ use base qw/Exporter/;
 use strict;
 
 use Digest::SHA1 qw(sha1 sha1_base64);
+use Crypt::Digest::SHA256 qw(sha256);
 use XML::XPath;
 use MIME::Base64;
 use Carp;
@@ -156,14 +157,13 @@ sub verify {
                     die "Unrecognized key type or no KeyInfo in document";
             }
     }
-
     my $digest_method = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm');
     my $digest = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestValue'));
     
     my $signed_xml    = $self->_get_signed_xml();
     my $canonical     = $self->_transform($signed_xml, $signature_node);
-    my $digest_bin    = sha1($canonical);
-
+#    my $digest_bin = ( $digest_method eq 'http://www.w3.org/2001/04/xmlenc#sha256' ) ? sha256( $canonical ) : sha1( $canonical );
+    my $digest_bin = sha1( $canonical );
     return 1 if ($digest eq _trim(encode_base64($digest_bin)));
     return 0;
 }
@@ -270,7 +270,6 @@ sub _clean_x509 {
 sub _verify_x509 {
     my $self = shift;
     my ($context,$canonical,$sig) = @_;
-
     eval {
         require Crypt::OpenSSL::X509;
     };
@@ -299,6 +298,9 @@ sub _verify_x509_cert {
     my $bin_signature = decode_base64($sig);
 
     # If successful verify, store the signer's cert for validation
+#    if( $cert->sig_alg_name eq 'sha256WithRSAEncryption' ) {
+#        $rsa_pub->use_sha256_hash();
+#    }
     if ($rsa_pub->verify( $canonical,  $bin_signature )) {
         $self->{signer_cert} = $cert;
         return 1;
