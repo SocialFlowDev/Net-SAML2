@@ -18,7 +18,6 @@ use base qw/Exporter/;
 use strict;
 
 use Digest::SHA1 qw(sha1 sha1_base64);
-use Crypt::Digest::SHA256 qw(sha256);
 use XML::XPath;
 use MIME::Base64;
 use Carp;
