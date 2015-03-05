@@ -2,6 +2,7 @@ package Net::SAML2::Binding::Redirect;
 use Moose;
 use MooseX::Types::Moose qw/ Str /;
 use MooseX::Types::URI qw/ Uri /;
+use namespace::autoclean;
 
 =head1 NAME
 

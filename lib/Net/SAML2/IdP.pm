@@ -2,7 +2,7 @@ package Net::SAML2::IdP;
 use Moose;
 use MooseX::Types::Moose qw/ Str Object HashRef ArrayRef Int /;
 use MooseX::Types::URI qw/ Uri /;
-
+use namespace::autoclean;
 =head1 NAME
 
 Net::SAML2::IdP - SAML Identity Provider object

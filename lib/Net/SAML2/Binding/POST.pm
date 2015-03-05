@@ -1,6 +1,7 @@
 package Net::SAML2::Binding::POST;
 use Moose;
 use MooseX::Types::Moose qw/ Str /;
+use namespace::autoclean;
 
 =head1 NAME
 

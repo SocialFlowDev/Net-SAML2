@@ -4,6 +4,7 @@ use MooseX::Types::Moose qw/ Str /;
 use DateTime::Format::XSD;
 use Crypt::OpenSSL::Random;
 use XML::Generator;
+use namespace::autoclean;
 
 =head1 NAME
 

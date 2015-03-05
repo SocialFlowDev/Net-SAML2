@@ -5,6 +5,7 @@ use MooseX::Types::DateTime qw/ DateTime /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
 use DateTime::Format::XSD;
+use namespace::autoclean;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
@@ -112,4 +113,5 @@ sub valid {
     return 1;
 }
 
+__PACKAGE__->meta->make_immutable;
 1;

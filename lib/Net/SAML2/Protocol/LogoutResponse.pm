@@ -2,6 +2,7 @@ package Net::SAML2::Protocol::LogoutResponse;
 use Moose;
 use MooseX::Types::Moose qw/ Str /;
 use MooseX::Types::URI qw/ Uri /;
+use namespace::autoclean;
 
 with 'Net::SAML2::Role::ProtocolMessage';
 
