@@ -1,6 +1,9 @@
 package Net::SAML2::Binding::POST;
 use Moose;
 use MooseX::Types::Moose qw/ Str /;
+use Log::Contextual::WarnLogger;
+use Log::Contextual qw[ :log :dlog], -default_logger =>
+  Log::Contextual::WarnLogger->new( { env_prefix => 'NET_SAML2' } );
 use namespace::autoclean;
 
 =head1 NAME
@@ -44,8 +47,8 @@ sub handle_response {
 
     # unpack and check the signature
     my $xml = decode_base64($response);
-    warn $xml;
-    my $x = Net::SAML2::XML::Sig->new({ x509 => 1 });
+    log_debug { "handle_response, xml: $_[0]" } $xml;
+    my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert => $self->cacert });
     my $ret = $x->verify($xml);
     #die "signature check failed" unless $ret;
     warn "signature check failed" unless $ret;

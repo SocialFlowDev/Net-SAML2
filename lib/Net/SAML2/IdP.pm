@@ -37,8 +37,8 @@ has 'slo_urls'       => (isa => 'HashRef[Str]|Undef', is => 'ro', required => 1)
 has 'art_urls'       => (isa => 'HashRef[Str]|Undef', is => 'ro', required => 1);
 has 'certs'          => (isa => HashRef[Str], is => 'ro', required => 1);
 has 'formats'        => (isa => HashRef[Str], is => 'ro', required => 1);
-has 'default_format' => (isa => Str, is => 'ro', required => 1);
-has 'verify_cacert'  => (isa => Int, is => 'ro', required => 1); 
+has 'default_format' => (isa => Str, is => 'ro', required => 0);
+has 'verify_cacert'  => (isa => Int, is => 'ro', required => 1);
 
 =head2 new_from_url( url => $url, cacert => $cacert, verify_cacert => $bool )
 
@@ -140,8 +140,8 @@ sub new_from_xml {
         slo_urls       => $data->{SLO},
         art_urls       => $data->{Art}  || {  }, # Sometimes they don't have artifacts.
         certs          => $data->{Cert},
-        formats        => $data->{NameIDFormat},
-        default_format => $data->{DefaultFormat},
+        formats        => $data->{NameIDFormat} || {},
+        ( $data->{DefaultFormat} ? ( default_format => $data->{DefaultFormat} ) : () ),
         cacert         => $args{cacert},
         verify_cacert  => ( exists $args{verify_cacert} and $args{verify_cacert} == 0 ) ? 0 : 1,
     );

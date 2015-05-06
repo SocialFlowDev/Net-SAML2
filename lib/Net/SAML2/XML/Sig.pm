@@ -17,7 +17,8 @@ use base qw/Exporter/;
 
 use strict;
 
-use Digest::SHA1 qw(sha1 sha1_base64);
+use Digest::SHA1 qw(sha1 );
+use Crypt::Digest::SHA256 qw[ sha256 ];
 use XML::XPath;
 use MIME::Base64;
 use Carp;
@@ -105,11 +106,9 @@ sub sign {
 
     return $xml;
 }
-
 sub verify {
     my $self = shift;
     delete $self->{signer_cert};
-    
     my ($xml) = @_;
 
     $self->{ parser } = XML::XPath->new( xml => $xml );
@@ -136,170 +135,170 @@ sub verify {
     my $signed_info = XML::XPath::XMLParser::as_string($signed_info_node);
     my $signed_info_canon = $self->_canonicalize_xml( $signed_info );
 
-    if (defined $self->{cert_obj}) {
-            # use the provided cert to verify
-            return 0 unless $self->_verify_x509_cert($self->{cert_obj},$signed_info_canon,$signature);
-    }
-    else {
-            # extract the certficate or key from the document
-            my $keyinfo_node;
-            if ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:X509Data')) {
-                    return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon,$signature);
-            } 
-            elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
-                    return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
-            }
-            elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
-                    return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
-            }
-            else {
-                    die "Unrecognized key type or no KeyInfo in document";
-            }
-    }
-    my $digest_method = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm');
-    my $digest = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestValue'));
-    
-    my $signed_xml    = $self->_get_signed_xml();
-    my $canonical     = $self->_transform($signed_xml, $signature_node);
-#    my $digest_bin = ( $digest_method eq 'http://www.w3.org/2001/04/xmlenc#sha256' ) ? sha256( $canonical ) : sha1( $canonical );
-    my $digest_bin = sha1( $canonical );
-    return 1 if ($digest eq _trim(encode_base64($digest_bin)));
-    return 0;
+if (defined $self->{cert_obj}) {
+        # use the provided cert to verify
+        return 0 unless $self->_verify_x509_cert($self->{cert_obj},$signed_info_canon,$signature);
+}
+else {
+        # extract the certficate or key from the document
+        my $keyinfo_node;
+        if ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:X509Data')) {
+                return 0 unless $self->_verify_x509($keyinfo_node,$signed_info_canon,$signature);
+        } 
+        elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue')) {
+                return 0 unless $self->_verify_rsa($keyinfo_node,$signed_info_canon,$signature);
+        }
+        elsif ($keyinfo_node = $self->{parser}->find('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:DSAKeyValue')) {
+                return 0 unless $self->_verify_dsa($keyinfo_node,$signed_info_canon,$signature);
+        }
+        else {
+                die "Unrecognized key type or no KeyInfo in document";
+        }
+}
+my $digest_method = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm');
+my $digest = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestValue'));
+
+my $signed_xml    = $self->_get_signed_xml();
+my $canonical     = $self->_transform($signed_xml, $signature_node);
+my $digest_bin = ( $digest_method eq 'http://www.w3.org/2001/04/xmlenc#sha256' ) ? sha256( $canonical ) : sha1( $canonical );
+#my $digest_bin = sha1( $canonical );
+return 1 if ($digest eq _trim(encode_base64($digest_bin)));
+return 0;
 }
 
 sub signer_cert {
-    my $self = shift;
-    return $self->{signer_cert};
+my $self = shift;
+return $self->{signer_cert};
 }
 
 sub _get_xml_to_sign {
-    my $self = shift;
-    my $id = $self->{parser}->findvalue('//@ID');
-    die "You cannot sign an XML document without identifying the element to sign with an ID attribute" unless $id;
-    $self->{'sign_id'} = $id;
-    my $xpath = "//*[\@ID='$id']";
-    return $self->_get_node_as_text( $xpath );
+my $self = shift;
+my $id = $self->{parser}->findvalue('//@ID');
+die "You cannot sign an XML document without identifying the element to sign with an ID attribute" unless $id;
+$self->{'sign_id'} = $id;
+my $xpath = "//*[\@ID='$id']";
+return $self->_get_node_as_text( $xpath );
 }
 
 sub _get_signed_xml {
-    my $self = shift;
-    my $id = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/@URI');
-    $id =~ s/^#//;
-    $self->{'sign_id'} = $id;
-    my $xpath = "//*[\@ID='$id']";
-    return $self->_get_node_as_text( $xpath );
+my $self = shift;
+my $id = $self->{parser}->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/@URI');
+$id =~ s/^#//;
+$self->{'sign_id'} = $id;
+my $xpath = "//*[\@ID='$id']";
+return $self->_get_node_as_text( $xpath );
 }
 
 sub _transform {
-    my $self = shift;
-    my ($xml, $context) = @_;
+my $self = shift;
+my ($xml, $context) = @_;
 
-    my $transforms = $self->{parser}->find(
-        'dsig:SignedInfo/dsig:Reference/dsig:Transforms/dsig:Transform', 
-        $context
-    );
+my $transforms = $self->{parser}->find(
+    'dsig:SignedInfo/dsig:Reference/dsig:Transforms/dsig:Transform', 
+    $context
+);
 
-    foreach my $node ($transforms->get_nodelist) {
-        my $alg = $node->getAttribute('Algorithm');
+foreach my $node ($transforms->get_nodelist) {
+    my $alg = $node->getAttribute('Algorithm');
 
-        if ($alg eq TRANSFORM_ENV_SIG) {
-            $xml = $self->_transform_env_sig($xml);
-        }
-        elsif ($alg eq TRANSFORM_EXC_C14N) {
-            my $prefixlist = $self->_find_prefixlist($node);
-            $xml = $self->_canonicalize_xml($xml, 0, $prefixlist);
-        }
-        elsif ($alg eq TRANSFORM_EXC_C14N_COMMENTS) {
-            my $prefixlist = $self->_find_prefixlist($node);
-            $xml = $self->_canonicalize_xml($xml, 1, $prefixlist);
-        }
-        else {
-            die "Unsupported transform: $alg";
-        }
+    if ($alg eq TRANSFORM_ENV_SIG) {
+        $xml = $self->_transform_env_sig($xml);
     }
-    return $xml;
+    elsif ($alg eq TRANSFORM_EXC_C14N) {
+        my $prefixlist = $self->_find_prefixlist($node);
+        $xml = $self->_canonicalize_xml($xml, 0, $prefixlist);
+    }
+    elsif ($alg eq TRANSFORM_EXC_C14N_COMMENTS) {
+        my $prefixlist = $self->_find_prefixlist($node);
+        $xml = $self->_canonicalize_xml($xml, 1, $prefixlist);
+    }
+    else {
+        die "Unsupported transform: $alg";
+    }
+}
+return $xml;
 }
 
 sub _find_prefixlist {
-    my $self = shift;
-    my ($node) = @_;
-    my $prefixlist = $self->{parser}->findvalue('ec:InclusiveNamespaces/@PrefixList', $node);
-    return $prefixlist;
+my $self = shift;
+my ($node) = @_;
+my $prefixlist = $self->{parser}->findvalue('ec:InclusiveNamespaces/@PrefixList', $node);
+return $prefixlist;
 }
 
 sub _verify_rsa {
-    my $self = shift;
-    my ($context,$canonical,$sig) = @_;
+my $self = shift;
+my ($context,$canonical,$sig) = @_;
 
-    # Generate Public Key from XML
-    my $mod = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Modulus'));
-    my $modBin = decode_base64( $mod );
-    my $exp = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Exponent'));
-    my $expBin = decode_base64( $exp );
-    my $n = Crypt::OpenSSL::Bignum->new_from_bin($modBin);
-    my $e = Crypt::OpenSSL::Bignum->new_from_bin($expBin);
-    my $rsa_pub = Crypt::OpenSSL::RSA->new_key_from_parameters( $n, $e );
+# Generate Public Key from XML
+my $mod = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Modulus'));
+my $modBin = decode_base64( $mod );
+my $exp = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:KeyValue/dsig:RSAKeyValue/dsig:Exponent'));
+my $expBin = decode_base64( $exp );
+my $n = Crypt::OpenSSL::Bignum->new_from_bin($modBin);
+my $e = Crypt::OpenSSL::Bignum->new_from_bin($expBin);
+my $rsa_pub = Crypt::OpenSSL::RSA->new_key_from_parameters( $n, $e );
 
-    # Decode signature and verify
-    my $bin_signature = decode_base64($sig);
-    return 1 if ($rsa_pub->verify( $canonical,  $bin_signature ));
-    return 0;
+# Decode signature and verify
+my $bin_signature = decode_base64($sig);
+return 1 if ($rsa_pub->verify( $canonical,  $bin_signature ));
+return 0;
 }
 
 sub _clean_x509 {
-    my $self = shift;
-    my ($cert) = @_;
+my $self = shift;
+my ($cert) = @_;
 
-    # rewrap the base64 data from the certificate; it may not be
-    # wrapped at 64 characters as PEM requires
-    $cert =~ s/\n//g;
-    
-    my @lines;
-    while (length $cert > 64) {
-            push @lines, substr $cert, 0, 64, '';
-        }
-    push @lines, $cert;
-    
-    $cert = join "\n", @lines;
+# rewrap the base64 data from the certificate; it may not be
+# wrapped at 64 characters as PEM requires
+$cert =~ s/\n//g;
 
-    $cert = "-----BEGIN CERTIFICATE-----\n" . $cert . "\n-----END CERTIFICATE-----\n";
-    return $cert;
+my @lines;
+while (length $cert > 64) {
+        push @lines, substr $cert, 0, 64, '';
+    }
+push @lines, $cert;
+
+$cert = join "\n", @lines;
+
+$cert = "-----BEGIN CERTIFICATE-----\n" . $cert . "\n-----END CERTIFICATE-----\n";
+return $cert;
 }
 
 sub _verify_x509 {
-    my $self = shift;
-    my ($context,$canonical,$sig) = @_;
-    eval {
-        require Crypt::OpenSSL::X509;
-    };
-    confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certificates" if $@;
+my $self = shift;
+my ($context,$canonical,$sig) = @_;
+eval {
+    require Crypt::OpenSSL::X509;
+};
+confess "Crypt::OpenSSL::X509 needs to be installed so that we can handle X509 certificates" if $@;
 
-    # Generate Public Key from XML
-    my $certificate = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:X509Data/dsig:X509Certificate'));
+# Generate Public Key from XML
+my $certificate = _trim($self->{parser}->findvalue('//dsig:Signature/dsig:KeyInfo/dsig:X509Data/dsig:X509Certificate'));
 
-    # This is added because the X509 parser requires it for self-identification
-    $certificate = $self->_clean_x509($certificate);
+# This is added because the X509 parser requires it for self-identification
+$certificate = $self->_clean_x509($certificate);
 
-    my $cert = Crypt::OpenSSL::X509->new_from_string($certificate);
-    return $self->_verify_x509_cert($cert, $canonical, $sig);
+my $cert = Crypt::OpenSSL::X509->new_from_string($certificate);
+return $self->_verify_x509_cert($cert, $canonical, $sig);
 }
 
 sub _verify_x509_cert {
-    my $self = shift;
-    my ($cert, $canonical, $sig) = @_;
+my $self = shift;
+my ($cert, $canonical, $sig) = @_;
 
-    eval {
-        require Crypt::OpenSSL::RSA;
-    };
-    my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
+eval {
+    require Crypt::OpenSSL::RSA;
+};
+my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
 
-    # Decode signature and verify
-    my $bin_signature = decode_base64($sig);
+# Decode signature and verify
+my $bin_signature = decode_base64($sig);
 
-    # If successful verify, store the signer's cert for validation
-#    if( $cert->sig_alg_name eq 'sha256WithRSAEncryption' ) {
-#        $rsa_pub->use_sha256_hash();
-#    }
+# If successful verify, store the signer's cert for validation
+if( $cert->sig_alg_name eq 'sha256WithRSAEncryption' ) {
+    $rsa_pub->use_sha256_hash();
+}
     if ($rsa_pub->verify( $canonical,  $bin_signature )) {
         $self->{signer_cert} = $cert;
         return 1;
