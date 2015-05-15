@@ -7,6 +7,11 @@ $DEBUG = 0;
 $VERSION = '0.23';
 
 use base qw(Class::Accessor);
+use URI;
+use Log::Contextual::WarnLogger;
+use Log::Contextual qw[ :log :dlog], -default_logger =>
+  Log::Contextual::WarnLogger->new( { env_prefix => 'NET_SAML2' } );
+
 Net::SAML2::XML::Sig->mk_accessors(qw(canonicalizer key));
 
 # We are exporting functions
@@ -106,6 +111,21 @@ sub sign {
 
     return $xml;
 }
+# http://www.w3.org/TR/xmlsec-algorithms/
+sub _resolve_signature_algo {
+    my ($self,$algorithm) = @_;
+    my $default = 'sha1';
+    warn("no algorithm passed!") && return $default unless $algorithm;
+    my %algo_dispatch = (
+        'rsa-sha1' => 'sha1',
+        'rsa-sha256' => 'sha256',
+    );
+    my $uri = URI->new( $algorithm );
+    return $default unless $uri->can('fragment');
+    my $ret = $algo_dispatch{ $uri->fragment } || $default;
+    log_debug { "_resolve_signature_algo: $algorithm, returning $ret" };
+    return $ret;
+}
 sub verify {
     my $self = shift;
     delete $self->{signer_cert};
@@ -119,6 +139,13 @@ sub verify {
     my $signed_info_node = $self->_get_node('//dsig:Signature/dsig:SignedInfo');
 
     my $signature_node = $self->_get_node('//dsig:Signature');
+    my $signature_method = $self->_get_node('//dsig:Signature/dsig:SignedInfo/dsig:SignatureMethod');
+    my $signature_alorithm =
+      $signature_method
+      ? $self->_resolve_signature_algo(
+        $signature_method->getAttribute('Algorithm') )
+      : 'sha1';
+
     my $ns;
     if (defined $signature_node && ref $signature_node) {
             $ns = $signature_node->getNamespaces->[0];
@@ -284,22 +311,24 @@ return $self->_verify_x509_cert($cert, $canonical, $sig);
 }
 
 sub _verify_x509_cert {
-my $self = shift;
-my ($cert, $canonical, $sig) = @_;
+    my $self = shift;
+    my ( $cert, $canonical, $sig, $sig_algo ) = @_;
+    $sig_algo ||= 'sha1';
+    eval { require Crypt::OpenSSL::RSA; };
+    my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key( $cert->pubkey );
+    my $meth = $rsa_pub->can( sprintf( "use_%_hash", $sig_algo ) );
+    if( $meth ) {
+        $rsa_pub->$meth;
+    } else {
+        log_warn { "rsa_pub cannot $_[0]!" } sprintf( 'use_%s_hash', $sig_algo ) 
+    }
 
-eval {
-    require Crypt::OpenSSL::RSA;
-};
-my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key($cert->pubkey);
+    # Decode signature and verify
+    my $bin_signature = decode_base64($sig);
 
-# Decode signature and verify
-my $bin_signature = decode_base64($sig);
+    # If successful verify, store the signer's cert for validation
 
-# If successful verify, store the signer's cert for validation
-if( $cert->sig_alg_name eq 'sha256WithRSAEncryption' ) {
-    $rsa_pub->use_sha256_hash();
-}
-    if ($rsa_pub->verify( $canonical,  $bin_signature )) {
+    if ( $rsa_pub->verify( $canonical, $bin_signature ) ) {
         $self->{signer_cert} = $cert;
         return 1;
     }

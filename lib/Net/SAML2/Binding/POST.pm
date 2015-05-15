@@ -4,6 +4,9 @@ use MooseX::Types::Moose qw/ Str /;
 use Log::Contextual::WarnLogger;
 use Log::Contextual qw[ :log :dlog], -default_logger =>
   Log::Contextual::WarnLogger->new( { env_prefix => 'NET_SAML2' } );
+use Net::SAML2::Exceptions;
+use Err qw[ throw_err is_err ];
+
 use namespace::autoclean;
 
 =head1 NAME
@@ -24,7 +27,7 @@ Net::SAML2::Binding::POST - HTTP POST binding for SAML2
 use Net::SAML2::XML::Sig;
 use MIME::Base64 qw/ decode_base64 /;
 use Crypt::OpenSSL::VerifyX509;
-
+use Net::SAML2::Protocol::Assertion;
 =head2 new()
 
 Constructor. Returns an instance of the POST binding. 
@@ -52,15 +55,20 @@ sub handle_response {
     my $ret = $x->verify($xml);
     #die "signature check failed" unless $ret;
     warn "signature check failed" unless $ret;
-
+    Dlog_debug {"got ret from verify: $_"} $ret;
     # verify the signing certificate
     my $cert = $x->signer_cert;
-    warn $cert;
-    warn $self->cacert;
     my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
-#    $ret = $ca->verify($cert);
-    $ret = 1;
-
+    $ret = $ca->verify($cert);
+    Dlog_debug {"got ret from \$ca->verify(\$cert) $_"} $ret;
+    unless ( Net::SAML2::Protocol::Assertion->xml_is_valid_assertion($xml) ) {
+        throw_err '.SAML2Error.AssertionInvalid',
+          "The SAML Response received is missing an assertion.",
+          meta => { xml => $xml };
+    }
+    my $assertion = Net::SAML2::Protocol::Assertion->new_from_xml(
+        xml => $xml
+    );
     if ($ret) {
         return sprintf("%s (verified)", $cert->subject);
     }

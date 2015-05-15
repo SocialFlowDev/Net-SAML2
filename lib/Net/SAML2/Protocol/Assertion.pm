@@ -5,6 +5,7 @@ use MooseX::Types::DateTime qw/ DateTime /;
 use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
 use DateTime::Format::XSD;
+use Carp;
 use namespace::autoclean;
 
 with 'Net::SAML2::Role::ProtocolMessage';
@@ -39,36 +40,50 @@ given XML to find the attributes, session and nameid.
 
 =cut
 
-sub new_from_xml { 
-    my ($class, %args) = @_;
+sub xml_is_valid_assertion {
+    my ( $class, $xml ) = @_;
+    my $xpath = XML::XPath->new( xml => $xml );
+    $xpath->set_namespace( 'saml', 'urn:oasis:names:tc:SAML:2.0:assertion' );
+    unless ( $xpath->findnodes('//saml:Assertion') ) {
+        return 0;
+    }
+    return 1;
+}
+sub new_from_xml {
+    my ( $class, %args ) = @_;
 
     my $xpath = XML::XPath->new( xml => $args{xml} );
-    $xpath->set_namespace('saml', 'urn:oasis:names:tc:SAML:2.0:assertion');
-
-    my $attributes = {};
-    for my $node ($xpath->findnodes('//saml:Assertion/saml:AttributeStatement/saml:Attribute')) {
-        my @values = $node->findnodes('saml:AttributeValue|AttributeValue');
-        $attributes->{$node->getAttribute('Name')} = [
-            map { $_->string_value } @values
-        ];
+    $xpath->set_namespace( 'saml', 'urn:oasis:names:tc:SAML:2.0:assertion' );
+    unless ( $class->xml_is_valid_assertion( $args{xml} ) ) {
+        confess
+"xml is not a valid assertion, please check xml_is_valid_assertion(\$xml) first.";
     }
-        
+    my $attributes = {};
+    for my $node (
+        $xpath->findnodes(
+            '//saml:Assertion/saml:AttributeStatement/saml:Attribute') )
+    {
+        my @values = $node->findnodes('saml:AttributeValue|AttributeValue');
+        $attributes->{ $node->getAttribute('Name') } =
+          [ map { $_->string_value } @values ];
+    }
+
     my $not_before = DateTime::Format::XSD->parse_datetime(
-        $xpath->findvalue('//saml:Conditions/@NotBefore')->value
-    );
+        $xpath->findvalue('//saml:Conditions/@NotBefore')->value );
     my $not_after = DateTime::Format::XSD->parse_datetime(
-        $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')->value
-    );
+        $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')->value );
 
     my $self = $class->new(
-        attributes     => $attributes,
-        session        => $xpath->findvalue('//saml:AuthnStatement/@SessionIndex')->value,
-        nameid         => $xpath->findvalue('//saml:Subject/saml:NameID')->value,
-        audience       => $xpath->findvalue('//saml:Conditions/saml:AudienceRestriction/saml:Audience')->value,
-        not_before     => $not_before,
-        not_after      => $not_after,
+        attributes => $attributes,
+        session =>
+          $xpath->findvalue('//saml:AuthnStatement/@SessionIndex')->value,
+        nameid   => $xpath->findvalue('//saml:Subject/saml:NameID')->value,
+        audience => $xpath->findvalue(
+            '//saml:Conditions/saml:AudienceRestriction/saml:Audience')->value,
+        not_before => $not_before,
+        not_after  => $not_after,
     );
-        
+
     return $self;
 }
 
