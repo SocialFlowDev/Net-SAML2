@@ -53,7 +53,6 @@ sub handle_response {
     log_debug { "handle_response, xml: $_[0]" } $xml;
     my $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert => $self->cacert });
     my $ret = $x->verify($xml);
-    #die "signature check failed" unless $ret;
     warn "signature check failed" unless $ret;
     Dlog_debug {"got ret from verify: $_"} $ret;
     # verify the signing certificate
