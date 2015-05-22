@@ -72,7 +72,6 @@ sub new_from_xml {
         $xpath->findvalue('//saml:Conditions/@NotBefore')->value );
     my $not_after = DateTime::Format::XSD->parse_datetime(
         $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')->value );
-
     my $self = $class->new(
         attributes => $attributes,
         session =>
