@@ -12,7 +12,7 @@ use Log::Contextual::WarnLogger;
 use Log::Contextual qw[ :log :dlog], -default_logger =>
   Log::Contextual::WarnLogger->new( { env_prefix => 'NET_SAML2' } );
 
-Net::SAML2::XML::Sig->mk_accessors(qw(canonicalizer key));
+Net::SAML2::XML::Sig->mk_accessors(qw(canonicalizer key algorithm ));
 
 # We are exporting functions
 use base qw/Exporter/;
@@ -158,7 +158,7 @@ sub verify {
       ? $self->_resolve_signature_algo(
         $signature_method->getAttribute('Algorithm') )
       : 'sha1';
-
+    $self->{'algorithm'} = $signature_algorithm;
     my $ns;
     if ( defined $signature_node && ref $signature_node ) {
         $ns = $signature_node->getNamespaces->[0];
@@ -181,7 +181,7 @@ sub verify {
         return 0
           unless $self->_verify_x509_cert(
             $self->{cert_obj}, $signed_info_canon,
-            $signature,        $signature_algorithm
+            $signature
           );
     }
     else {
@@ -372,7 +372,7 @@ sub _verify_x509 {
 sub _verify_x509_cert {
     my $self = shift;
     my ( $cert, $canonical, $sig, $sig_algo ) = @_;
-    $sig_algo ||= 'sha1';
+    $sig_algo ||= $self->{'algorithm'} || 'sha1';
     eval { require Crypt::OpenSSL::RSA; };
     my $rsa_pub = Crypt::OpenSSL::RSA->new_public_key( $cert->pubkey );
     my $meth = $rsa_pub->can( sprintf( "use_%s_hash", $sig_algo ) );
