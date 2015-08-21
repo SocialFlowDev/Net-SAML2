@@ -22,6 +22,8 @@ implementation.
 has 'id'            => (isa => Str, is => 'ro', required => 1);
 has 'issue_instant' => (isa => Str, is => 'ro', required => 1);
 
+my @letters = ("a".."z");
+
 around 'BUILDARGS' => sub {
     my $orig = shift;
     my $class = shift;      
@@ -29,6 +31,7 @@ around 'BUILDARGS' => sub {
 
     # random ID for this message
     $args{id} ||= join '',
+        $letters[int rand @letters],
         defined($args{id_prefix}) ? $args{id_prefix} : (),
         unpack 'H*', Crypt::OpenSSL::Random::random_pseudo_bytes(16);
 
