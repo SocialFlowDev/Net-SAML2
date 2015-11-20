@@ -76,8 +76,7 @@ sub as_xml {
             ),
             $x->NameIDPolicy(
                 $samlp,
-                { AllowCreate => 'true',
-                  Format => $self->nameid_format },
+                { Format => $self->nameid_format },
             ),
             defined($self->authn_context) ? $x->RequestedAuthnContext(
                 $samlp,

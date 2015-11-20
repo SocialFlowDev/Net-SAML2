@@ -197,11 +197,10 @@ parameter involved - typically SAMLRequest.
 =cut
 
 sub sso_redirect_binding {
-    my ($self, $idp, $param, $destination) = @_;
+    my ($self, $idp, $param) = @_;
 
-    my $url = $destination // $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect');    
     my $redirect = Net::SAML2::Binding::Redirect->new(
-        url   => $url,
+        url   => $idp->sso_url('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'),
         cert  => $idp->cert('signing'),
         key   => $self->cert,
         param => $param,
