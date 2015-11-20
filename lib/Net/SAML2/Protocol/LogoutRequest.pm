@@ -37,7 +37,7 @@ Arguments:
 
 has 'session'       => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
 has 'nameid'        => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
-has 'nameid_format' => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
+has 'nameid_format' => (is => 'ro', required => 0);
 has 'issuer'        => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 has 'destination'   => (isa => Uri, is => 'ro', required => 1, coerce => 1);
 
@@ -84,6 +84,7 @@ sub as_xml {
             $samlp,
             { ID => $self->id,
               IssueInstant => $self->issue_instant, 
+              Destination => $self->destination,
               Version => '2.0' },
             $x->Issuer(
                 $saml,
@@ -91,9 +92,7 @@ sub as_xml {
             ),
             $x->NameID(
                 $saml,
-                { Format => $self->nameid_format,
-                  NameQualifier => $self->destination,
-                  SPNameQualifier => $self->issuer },
+                {},
                 $self->nameid,
             ),
             $x->SessionIndex(
