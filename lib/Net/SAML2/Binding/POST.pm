@@ -57,7 +57,12 @@ sub handle_response {
     Dlog_debug {"got ret from verify: $_"} $ret;
     # verify the signing certificate
     my $cert = $x->signer_cert;
-
+    my $x509 = Crypt::OpenSSL::X509->new_from_file($self->cacert);
+    my $contraints =  $x509->extensions->{'X509v3 Basic Constraints'};
+    if( $contraints && $contraints->to_string =~ /CA:FALSE/ ) {
+        log_debug { "cert is explicitly not a CA cert, unable to verify the message. "}
+        return  sprintf("%s (verified)", $cert->subject);
+    }
     my $ca = Crypt::OpenSSL::VerifyX509->new($self->cacert);
     $ret = $ca->verify($cert);
     Dlog_debug {"got ret from \$ca->verify(\$cert) $_"} $ret;
