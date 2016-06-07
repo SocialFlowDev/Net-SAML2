@@ -6,6 +6,7 @@ use Log::Contextual qw[ :log :dlog], -default_logger =>
   Log::Contextual::WarnLogger->new( { env_prefix => 'NET_SAML2' } );
 use Net::SAML2::Exceptions;
 use Err qw[ throw_err is_err ];
+use Try::Tiny;
 
 use namespace::autoclean;
 
@@ -46,19 +47,30 @@ Base64-encoded response, from the SAMLResponse CGI parameter.
 =cut
 
 sub handle_response {
-    my ($self, $response) = @_;
-
+    my ($self, $response, $p) = @_;
+    $p ||= {};
+    my $use_idp_cert_for_verify = $p->{use_idp_cert_for_verify};
     # unpack and check the signature
     my $xml = decode_base64($response);
     log_debug { "handle_response, xml: $_[0]" } $xml;
-    my $x = Net::SAML2::XML::Sig->new({ x509 => 1 });
+    my $x;
+    if( $use_idp_cert_for_verify ) {
+        $x = Net::SAML2::XML::Sig->new({ x509 => 1, cert => $self->cacert });
+    } else {
+        $x = Net::SAML2::XML::Sig->new({ x509 => 1 });
+    }
     my $ret = $x->verify($xml);
     confess "signature check failed" unless $ret;
     Dlog_debug {"got ret from verify: $_"} $ret;
     # verify the signing certificate
     my $cert = $x->signer_cert;
     my $x509 = Crypt::OpenSSL::X509->new_from_file($self->cacert);
-    my $contraints =  $x509->extensions->{'X509v3 Basic Constraints'};
+    my $contraints;
+    try {
+        $contraints =  $x509->extensions->{'X509v3 Basic Constraints'};
+    } catch {
+        warn "error getting constraints, $_";
+    };
     if( $contraints && $contraints->to_string =~ /CA:FALSE/ ) {
         log_debug { "cert is explicitly not a CA cert, unable to verify the message. "}
         return  sprintf("%s (verified)", $cert->subject);
