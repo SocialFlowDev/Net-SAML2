@@ -6,6 +6,7 @@ use MooseX::Types::Common::String qw/ NonEmptySimpleStr /;
 use DateTime;
 use DateTime::Format::XSD;
 use Carp;
+use XML::XPath;
 use namespace::autoclean;
 
 with 'Net::SAML2::Role::ProtocolMessage';
@@ -112,7 +113,7 @@ checks.
 sub valid {
     my ($self, $audience, %opt) = @_;
 
-    unless ($opt{no_audience}) {
+    unless ($opt{no_audience} || !$self->audience) {
         return 0 unless defined $audience;
         return 0 unless ($audience eq $self->audience);
     }
