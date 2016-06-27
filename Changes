@@ -2,6 +2,8 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.041     2016-06-27 15:42:35+00:00 UTC
+
       conditionally get extensions, cause it'll throw if there are no extensions, and optionally use the provided cacert for verify, as ping identity does not send the signing cert in the assertions - skaufman
       dont try to verify with a nonCA cert - skaufman
 
