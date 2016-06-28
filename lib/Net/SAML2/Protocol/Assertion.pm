@@ -124,14 +124,21 @@ sub valid {
 
     my $now = DateTime::->now;
     #check if the current time is less than NotBefore time
-    if (DateTime::->compare($now, $self->not_before) > -1 ) {
-        print "less\n";
+    if (DateTime::->compare($now, $self->not_before) == -1) {
         #check if IssueInstant exists
         #check if current time is less than IssueInstant time
-        if ($self->issue_instant && DateTime::->compare($now, $self->issue_instant) > -1) {
-            print "replace\n\n";
-            #set the current time to be the IssueInstant time
-            $now = $self->issue_instant;
+        #check if the difference between IssueInstant time and current time is less than 5 minutes 
+        if ($self->issue_instant) {
+            my $issue_instant = $self->issue_instant;
+            my $diff = $issue_instant->subtract_datetime($now);
+            if ( DateTime::->compare($now, $self->issue_instant) == -1 && $diff->minutes() < 6) {
+                #set the current time to be the IssueInstant time
+                $now = $self->issue_instant;
+            } else {
+                warn 'Difference between IssueInstant and current time is greater than 6 minutes';
+            }
+        } else {
+            warn 'IssueInstant time not found';
         }
     }
         
