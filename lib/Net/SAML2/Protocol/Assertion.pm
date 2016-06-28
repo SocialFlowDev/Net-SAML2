@@ -23,12 +23,13 @@ Net::SAML2::Protocol::Assertion - SAML2 assertion object
 
 =cut
 
-has 'attributes' => (isa => HashRef[ArrayRef], is => 'ro', required => 1);
-has 'session'    => (isa => Str, is => 'ro', required => 1);
-has 'nameid'     => (isa => Str, is => 'ro', required => 1);
-has 'not_before' => (isa => DateTime, is => 'ro', required => 1);
-has 'not_after'  => (isa => DateTime, is => 'ro', required => 1);
-has 'audience'   => (isa => NonEmptySimpleStr, is => 'ro', required => 1);
+has 'attributes' => ( isa => HashRef [ArrayRef], is => 'ro', required => 1 );
+has 'session'       => ( isa => Str,               is => 'ro', required => 1 );
+has 'nameid'        => ( isa => Str,               is => 'ro', required => 1 );
+has 'not_before'    => ( isa => DateTime,          is => 'ro', required => 1 );
+has 'not_after'     => ( isa => DateTime,          is => 'ro', required => 1 );
+has 'issue_instant' => ( isa => DateTime,          is => 'ro', required => 0 );
+has 'audience'      => ( isa => NonEmptySimpleStr, is => 'ro', required => 1 );
 
 =head1 METHODS
 
@@ -73,6 +74,8 @@ sub new_from_xml {
         $xpath->findvalue('//saml:Conditions/@NotBefore')->value );
     my $not_after = DateTime::Format::XSD->parse_datetime(
         $xpath->findvalue('//saml:Conditions/@NotOnOrAfter')->value );
+    my $issue_instant = DateTime::Format::XSD->parse_datetime(
+        $xpath->findvalue('//saml:Assertion/@IssueInstant')->value );
     my $self = $class->new(
         attributes => $attributes,
         session =>
@@ -82,6 +85,7 @@ sub new_from_xml {
             '//saml:Conditions/saml:AudienceRestriction/saml:Audience')->value,
         not_before => $not_before,
         not_after  => $not_after,
+        issue_instant => $issue_instant
     );
 
     return $self;
@@ -119,6 +123,17 @@ sub valid {
     }
 
     my $now = DateTime::->now;
+    #check if the current time is less than NotBefore time
+    if (DateTime::->compare($now, $self->not_before) > -1 ) {
+        print "less\n";
+        #check if IssueInstant exists
+        #check if current time is less than IssueInstant time
+        if ($self->issue_instant && DateTime::->compare($now, $self->issue_instant) > -1) {
+            print "replace\n\n";
+            #set the current time to be the IssueInstant time
+            $now = $self->issue_instant;
+        }
+    }
         
     # not_before is "NotBefore" element - exact match is ok
     # not_after is "NotOnOrAfter" element - exact match is *not* ok
