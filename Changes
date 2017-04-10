@@ -2,6 +2,8 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.043     2017-04-10 19:32:38+00:00 UTC
+
     - Add support for multiple x509 certs per provider, so we can a) rotate and b) support multiple like azure sends.
 
 0.042     2016-06-28 19:34:41+00:00 UTC
