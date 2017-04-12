@@ -1,0 +1,21 @@
+<samlp:Response Version="2.0" ID="KG7bCVy4Ya5pOgPO3Gl2m1Pbmaw" IssueInstant="2017-04-12T01:08:59.732Z" InResponseTo="iSF_a8ea11f7f5ae155a77e3344a4655a92e" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol"><saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">https://bsso.bloomberg.com</saml:Issuer><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status><saml:Assertion ID="BMnF-FCZVlOnlDZV9Xu7x1DKuXn" IssueInstant="2017-04-12T01:08:59.761Z" Version="2.0" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"><saml:Issuer>https://bsso.bloomberg.com</saml:Issuer><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+<ds:SignedInfo>
+<ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+<ds:Reference URI="#BMnF-FCZVlOnlDZV9Xu7x1DKuXn">
+<ds:Transforms>
+<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+<ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+</ds:Transforms>
+<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+<ds:DigestValue>FwerNDQvq0WSzI4YJiiGXnTU4NeZz8QgINRSX7uR/aA=</ds:DigestValue>
+</ds:Reference>
+</ds:SignedInfo>
+<ds:SignatureValue>
+AKUPvfYwTUllIcEzxJwO06HAQBeeboH8uqSUsvNhdIKDoVzUw7v1HXPkdGH0L3vk7pIdPg3g1eyi
+EA3TCUzKALGaCstEpqRfdkZV2RiofHjgrrCrn12NvGkhy6jsm+zz4gXX3Bq8NUhut5OieA81O47Y
+0uUPrzqfsVWGm215OJjkoeJNn3UZ6wbOIF8P5qOW16kloC66WBq7TWsPEkX3jFmKGmR3apreJia1
+hadasMEMXxiXGvvhMe2hb0p4h2+4zSKrJ/tz7NGIQo8ndEMmm4QFakp5rT3kH2Gh1+T/ZSDa7TRi
+WR0quY6IEPP8A6smPHmA89J1GB2bsLs3MNowSA==
+</ds:SignatureValue>
+</ds:Signature><saml:Subject><saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified">Amkatanuma@bloomberg.net</saml:NameID><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData Recipient="https://www.socialflow.com/extauth/response" NotOnOrAfter="2017-04-12T01:09:59.761Z" InResponseTo="iSF_a8ea11f7f5ae155a77e3344a4655a92e"/></saml:SubjectConfirmation></saml:Subject><saml:Conditions NotBefore="2017-04-12T01:07:59.761Z" NotOnOrAfter="2017-04-12T01:09:59.761Z"><saml:AudienceRestriction><saml:Audience>https://sso.socialflow.com</saml:Audience></saml:AudienceRestriction></saml:Conditions><saml:AuthnStatement SessionIndex="BMnF-FCZVlOnlDZV9Xu7x1DKuXn" AuthnInstant="2017-04-12T01:08:59.750Z"><saml:AuthnContext><saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified</saml:AuthnContextClassRef></saml:AuthnContext></saml:AuthnStatement></saml:Assertion></samlp:Response>
