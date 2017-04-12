@@ -2,6 +2,8 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+0.044     2017-04-12 15:06:17+00:00 UTC
+
     - Fix for Ping Identity, which does not send a cert with samlp assertions.
 
 0.043     2017-04-10 19:32:38+00:00 UTC
