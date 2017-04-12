@@ -78,6 +78,7 @@ sub handle_response {
     # unpack and check the signature
     my $xml = decode_base64($response);
     log_debug { "handle_response, xml: $_[0]" } $xml;
+    my $cert;
     if( $use_idp_cert_for_verify ) {
         my $verified = 0;
         my $error;
@@ -87,7 +88,11 @@ sub handle_response {
         for my $verifier ( @verifiers ) {
             try {
                 my $ret = $verifier->verify($xml);
-                $verified = 1 if $ret;
+                if($verifier->verify($xml)) {
+                    $verified = 1;
+                    log_debug { "verified cert" };
+                    $cert = $verifier->signer_cert;
+                }
             } catch {
                 $error = $_;
                 log_warn { "got error: $error verifying cert"} $error;
@@ -96,13 +101,13 @@ sub handle_response {
         unless( $verified )  {
             confess "signature check failed" unless $verified;
         }
+    } else {
+        my $x = Net::SAML2::XML::Sig->new({ x509 => 1 });
+        my $ret = $x->verify($xml);
+        confess "signature check failed" unless $ret;
+        $cert = $x->signer_cert;
     }
-    my $x = Net::SAML2::XML::Sig->new({ x509 => 1 });
-    my $ret = $x->verify($xml);
-    confess "signature check failed" unless $ret;
-    Dlog_debug {"got ret from verify: $_"} $ret;
     # verify the signing certificate
-    my $cert = $x->signer_cert;
     my @_x509 = map {
         Crypt::OpenSSL::X509->new_from_file($self->cacert);
     } @{ $self->cacert_list };
