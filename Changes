@@ -2,6 +2,8 @@ Revision history for Perl extension Net::SAML2.
 
 {{$NEXT}}
 
+    - Fix for Ping Identity, which does not send a cert with samlp assertions.
+
 0.043     2017-04-10 19:32:38+00:00 UTC
 
     - Add support for multiple x509 certs per provider, so we can a) rotate and b) support multiple like azure sends.
