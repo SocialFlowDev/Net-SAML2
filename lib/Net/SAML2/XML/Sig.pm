@@ -145,14 +145,17 @@ sub verify {
       ->set_namespace( 'dsig', 'http://www.w3.org/2000/09/xmldsig#' );
     $self->{parser}
       ->set_namespace( 'ec', 'http://www.w3.org/2001/10/xml-exc-c14n#' );
+    $self->{parser}
+      ->set_namespace( 'saml2', 'urn:oasis:names:tc:SAML:2.0:assertion' );
 
     my $signature = _trim(
-        $self->{parser}->findvalue('//dsig:Signature/dsig:SignatureValue') );
-    my $signed_info_node = $self->_get_node('//dsig:Signature/dsig:SignedInfo');
+        $self->{parser}->findvalue('//saml2:Assertion/dsig:Signature/dsig:SignatureValue') );
+    my $signed_info_node = $self->_get_node('//saml2:Assertion/dsig:Signature/dsig:SignedInfo');
+    my $signed_info_node_val = $self->{parser}->findvalue('//saml2:Assertion/dsig:Signature/dsig:SignedInfo');
 
-    my $signature_node = $self->_get_node('//dsig:Signature');
+    my $signature_node = $self->_get_node('//saml2:Assertion/dsig:Signature');
     my $signature_method =
-      $self->_get_node('//dsig:Signature/dsig:SignedInfo/dsig:SignatureMethod');
+      $self->_get_node('//saml2:Assertion/dsig:Signature/dsig:SignedInfo/dsig:SignatureMethod');
     my $signature_algorithm =
       $signature_method
       ? $self->_resolve_signature_algo(
@@ -219,11 +222,11 @@ sub verify {
     }
     my $digest_method =
       $self->{parser}->findvalue(
-'//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm'
+'//saml2:Assertion/dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestMethod/@Algorithm'
       );
     my $digest = _trim(
         $self->{parser}->findvalue(
-            '//dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestValue')
+            '//saml2:Assertion/dsig:Signature/dsig:SignedInfo/dsig:Reference/dsig:DigestValue')
     );
 
     my $signed_xml = $self->_get_signed_xml();
@@ -257,7 +260,7 @@ sub _get_xml_to_sign {
 sub _get_signed_xml {
     my $self = shift;
     my $id   = $self->{parser}
-      ->findvalue('//dsig:Signature/dsig:SignedInfo/dsig:Reference/@URI');
+    ->findvalue('//saml2:Assertion/dsig:Signature/dsig:SignedInfo/dsig:Reference/@URI');
     $id =~ s/^#//;
     $self->{'sign_id'} = $id;
     my $xpath = "//*[\@ID='$id']";
