@@ -145,8 +145,6 @@ sub verify {
       ->set_namespace( 'dsig', 'http://www.w3.org/2000/09/xmldsig#' );
     $self->{parser}
       ->set_namespace( 'ec', 'http://www.w3.org/2001/10/xml-exc-c14n#' );
-    $self->{parser}
-      ->set_namespace( 'saml2', 'urn:oasis:names:tc:SAML:2.0:assertion' );
 
     my $signature = _trim(
         $self->{parser}->findvalue('(//saml2:Assertion|//Assertion)/dsig:Signature/dsig:SignatureValue') );
